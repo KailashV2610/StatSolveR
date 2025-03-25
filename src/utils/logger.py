@@ -17,7 +17,7 @@ def log_info(message):
     logging.info(message)
 
 def log_error(error):
-    """Log errors."""
+    """Log errors with traceback."""
     logging.error(error, exc_info=True)
 
 def log_progress(step, details=""):

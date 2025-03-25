@@ -1,54 +1,113 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from src.utils.logger import log_info, log_error, log_progress
+from huggingface_hub import login
+import os
 from llama_cpp import Llama
-from src.utils.logger import log_info, log_error
+from accelerate import infer_auto_device_map
+import torch
+from sentence_transformers import SentenceTransformer, CrossEncoder
+from rank_bm25 import BM25Okapi
+import requests
+import json
 
-# Load Models
-log_info("Loading Sentence Transformer and CLIP")
-text_model = SentenceTransformer('all-MiniLM-L6-v2')
-vision_model = SentenceTransformer("clip-vit-base-patch32")
-llm = Llama(model_path="Llama-Model.bin")
-
-# Connect to ChromaDB
-client = chromadb.PersistentClient(path="./chroma_db")
-collection = client.get_or_create_collection(name="stats_knowledge")
-
-def retrieve_context(query, top_k=5):
-    """Retrieve relevant text & images for the query."""
+def retrieve_context(query):
+    """Retrieves the most relevant context from ChromaDB."""
+    # Load ChromaDB collection
     try:
-        log_info(f"Retrieving context for: {query}")
-        query_embedding = text_model.encode(query).tolist()
-        results = collection.query(query_embeddings=[query_embedding], n_results=top_k)
-        
-        context = [res["text"] for res in results["metadatas"][0] if "text" in res]
-        images = [
-            {"file": res["image"], "caption": res.get("caption", ""), "label": res.get("label", "")} 
-            for res in results["metadatas"][0] if "image" in res
-        ]
+        chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        collection = chroma_client.get_collection("statistics_knowledge")
+        log_info("ChromaDB collection loaded successfully.")
+    except Exception as e:
+        log_error(f"Error loading ChromaDB collection: {e}")
 
-        log_info(f"Context Retrieved: {context[:1]}... Images: {images}")
-        return context, images
+    # Load LLM (Hugging Face)
+    try:
+        model_id = "BAAI/bge-large-en"
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        
+        log_info("LLM model loaded successfully.")
+    except Exception as e:
+        log_error(f"Error loading LLM: {e}")
+
+    embedding_model = SentenceTransformer("BAAI/bge-large-en")
+    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    try:
+        log_progress("Retrieving context", query)
+        query_embedding = embedding_model.encode(query)
+        results = collection.query(query_embeddings=[query_embedding], n_results=10)
+
+        all_docs = [
+            tokenizer.decode([int(token) for token in doc.split()], skip_special_tokens=True)
+            if isinstance(doc, str) and all(token.isdigit() for token in doc.split()) 
+            else doc
+            for doc in results["documents"][0]
+        ]
+        log_info(all_docs)
+        tokenized_docs = [doc.split() for doc in all_docs]
+
+        # BM25 Re-Ranking
+        bm25 = BM25Okapi(tokenized_docs)
+        bm25_scores = bm25.get_scores(query.split())
+        sorted_docs = [doc for _, doc in sorted(zip(bm25_scores, all_docs), reverse=True)]
+
+        # LLM Re-Ranking
+        query_doc_pairs = [(query, doc) for doc in sorted_docs]
+        scores = reranker.predict(query_doc_pairs)
+        ranked_docs = [doc for _, doc in sorted(zip(scores, sorted_docs), reverse=True)]
+
+        context = " ".join(ranked_docs[:3]) 
+        log_info(f"Retrieved context for query: {query}")
+        return context
     except Exception as e:
         log_error(f"Error retrieving context: {e}")
-        return [], []
+        return "Error fetching context."
 
 def ask_llm(query):
-    """Fetch relevant context & use Llama for response."""
-    try:
-        context, images = retrieve_context(query)
-        context_text = " ".join(context)
-        image_text = "\n".join([f"[Image: {img['file']} | Caption: {img['caption']}]" for img in images])
-        
-        full_prompt = f"Context: {context_text}\n{image_text}\nAnswer this: {query}"
-        log_info(f"Sending prompt to Llama model")
-        response = llm(full_prompt)
-        log_info(f"Response received from Llama")
-        return response, images
-    except Exception as e:
-        log_error(f"Error in LLM call: {e}")
-        return "An error occurred.", []
+    """Fetches relevant context and generates a response from the LLM."""
+    # Login to Hugging Face
+    login(os.getenv('HUGGINGFACEHUB_API_TOKEN'))
 
-if __name__ == "__main__":
-    question = "What is the probability distribution of trousers?"
-    answer, related_images = ask_llm(question)
-    log_info(f"Question: {question} | Answer: {answer[:50]}... | Images: {related_images}")
+    try:
+        context = retrieve_context(query)
+        output_format = """```python
+                           #Code Block
+                           ```
+                        """
+
+        prompt = f"""<persona> You are an assitant helping the user with writing python program for the given question. </persona>
+            <question> {query} </question>
+            <context> {context} </context>
+            <output_format> {output_format} </output_format>
+            <instruction>
+            - Carefully analyze the context given between these lines <context> and </context> and answer the question between <question> and </question>.
+            - Write down the python code only (make sure that this part is directly executable).
+            - MAKE SURE THAT THE RESPONE YOU PROVIDE STRICTLY FOLLOWs ONLY THE OUTPUT FORMAT GIVEN BETWEEN <output_format> AND </output_format> LINES IN A VALID JSON STRUCTURE.
+            </instruction>"""
+
+        log_info(f"Querying LLM with context: {context[:50]}...")
+        response = requests.post(
+            url='https://openrouter.ai/api/v1/chat/completions',
+                headers={
+                    "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+                    "Content-Type": "application/json",
+                },
+            data=json.dumps({
+                    "model": "meta-llama/llama-3.3-70b-instruct:free",
+                    "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+            })
+        )
+        result_json = response.json()
+        log_info(result_json)
+        # print(response["choices"][0]["message"]["content"])
+        result = result_json["choices"][0]["message"]["content"]
+        log_progress("LLM Response Generated", result)
+        return result
+    except Exception as e:
+        log_error(f"Error querying LLM: {e}")
+        return "Error generating response."

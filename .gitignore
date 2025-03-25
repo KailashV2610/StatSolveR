@@ -16,3 +16,11 @@
 *.bak
 *.bib
 *.log
+*.sqlite3
+*.bin
+*.pptx
+*.pickle
+*.pyc
+secret.txt
+.env
+*.drawio
