@@ -3,7 +3,7 @@ import re
 from src.dependency_functions.functions import *
 from src.utils.logger import log_info, log_error, log_progress
 
-def extract_code_block(response):
+def extract_code_block(response: str) -> str:
     """
     Extracts Python code from a response that is enclosed in triple backticks.
     """
@@ -11,7 +11,7 @@ def extract_code_block(response):
     log_info(f"Extracted code block: {match.group(1)}")
     return match.group(1).strip() if match else None
 
-def run_code(code):
+def run_code(code: str) -> tuple:
     """Runs the provided Python code and returns the output."""
     code = extract_code_block(code)
     try:

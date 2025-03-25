@@ -11,7 +11,7 @@ from rank_bm25 import BM25Okapi
 import requests
 import json
 
-def retrieve_context(query):
+def retrieve_context(query: str) -> str:
     """Retrieves the most relevant context from ChromaDB."""
     # Load ChromaDB collection
     try:
@@ -63,7 +63,7 @@ def retrieve_context(query):
         log_error(f"Error retrieving context: {e}")
         return "Error fetching context."
 
-def ask_llm(query):
+def ask_llm(query: str) -> str:
     """Fetches relevant context and generates a response from the LLM."""
     # Login to Hugging Face
     login(os.getenv('HUGGINGFACEHUB_API_TOKEN'))

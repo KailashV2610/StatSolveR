@@ -17,7 +17,7 @@ try:
 except Exception as e:
     log_error(f"Error initializing ChromaDB: {e}")
 
-def extract_text_from_tex(file_path):
+def extract_text_from_tex(file_path: str) -> str:
     """Extracts text from LaTeX (.tex) files, removing LaTeX commands."""
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -33,7 +33,7 @@ def extract_text_from_tex(file_path):
         log_error(f"Error processing LaTeX file {file_path}: {e}")
         return ""
 
-def process_data_files(data_folder):
+def process_data_files(data_folder: str) -> None:
     """Processes .tex and .csv files and loads them into ChromaDB."""
     log_progress("Starting data processing", f"Scanning folder: {data_folder}")
 

@@ -5,6 +5,7 @@ from src.dependency_functions.run_code import *
 from src.utils.logger import log_info, log_error
 import asyncio
 
+st.set_page_config(page_title="StatSolveR")
 st.title("StatSolveR")
 st.write("An LLM-Powered Python Executor for Statistical Problem Solving")
 
