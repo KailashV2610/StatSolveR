@@ -134,4 +134,4 @@ pytest test/test.py
 
 📧 Contact: 
  - [LinkedIn - Kailash V](https://www.linkedin.com/in/kailash-v/)
- - [Email](mail to: veluvkl@outlook.com): veluvkl@outlook.com 
+ - Email: *veluvkl@outlook.com*
