@@ -104,7 +104,7 @@ pytest test/test.py
 
 ### 📜 Academic Citations
 
-**[Qwen](https://huggingface.co/Qwen)**
+- **[Qwen](https://huggingface.co/Qwen)**
 ```bibtex
 @article{qwen2.5,
       title={Qwen2.5 Technical Report}, 
@@ -114,7 +114,7 @@ pytest test/test.py
 }
 ```
 
-**[PolyCoder](https://huggingface.co/NinedayWang)**
+- **[PolyCoder](https://huggingface.co/NinedayWang)**
 ```bibtex
 @inproceedings{
   xu2022polycoder,
@@ -134,4 +134,4 @@ pytest test/test.py
 
 📧 Contact: 
  - [LinkedIn - Kailash V](https://www.linkedin.com/in/kailash-v/)
- - [Email](veluvkl@outlook.com)
+ - [Email](mail to: veluvkl@outlook.com): veluvkl@outlook.com 
