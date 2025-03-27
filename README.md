@@ -19,7 +19,7 @@ A Python code execution framework powered by LLaMA 3 (70B) via OpenRouter, built
 
 ## 📂 Project Structure
 
-```python
+```console
 📦 llm-python-executor/
  ┣ 📂 src/
  ┃ ┣ 📂 dependency_functions/
@@ -46,7 +46,7 @@ cd llm-python-executor
 ```
 
 ### 2️⃣ Install Dependencies
-```bash
+```console  
 pip install -r requirements.txt
 ```
 
@@ -54,13 +54,13 @@ pip install -r requirements.txt
 
 Create a .env file in the project root and add the following:
 
-```bash
+```console
 HUGGINGFACEHUB_API_TOKEN=your_huggingface_token
 OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
 ### 4️⃣ Run the Streamlit App
-```bash
+```console
 streamlit run src/ui/app.py
 ```
 
@@ -70,16 +70,14 @@ streamlit run src/ui/app.py
 
 Once the app starts, enter a statistical query, and the system will:
 
-Retrieve context from JASP for Beginners via ChromaDB.
-
-Generate Python code using LLaMA 3 (70B).
-
-Execute the code dynamically and display the result.
+- Retrieve context from JASP for Beginners via ChromaDB.
+- Generate Python code using LLaMA 3 (70B).
+- Execute the code dynamically and display the result.
 
 ### 🛠️ Running Tests
 Run unit tests to validate execution:
 
-```bash
+```console
 pytest test/test.py
 ```
 
@@ -102,8 +100,11 @@ pytest test/test.py
 
 **[LLaMA 2 & 3 - Meta AI](https://www.llama.com/docs/model-cards-and-prompt-formats/llama3_3/)**
 
+**[LLaMA - GGUF - The Bloke](https://huggingface.co/TheBloke)**
+
 ### 📜 Academic Citations
 
+**[Qwen](https://huggingface.co/Qwen)**
 ```bibtex
 @article{qwen2.5,
       title={Qwen2.5 Technical Report}, 
@@ -111,7 +112,10 @@ pytest test/test.py
       journal={arXiv preprint arXiv:2412.15115},
       year={2024}
 }
+```
 
+**[PolyCoder](https://huggingface.co/NinedayWang)**
+```bibtex
 @inproceedings{
   xu2022polycoder,
   title={A Systematic Evaluation of Large Language Models of Code},
